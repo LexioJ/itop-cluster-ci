@@ -1,95 +1,235 @@
-# itop-cluster-ci
+# iTop Cluster CI Extension
 
-Extensions for Combodo's ITIL Solution:   iTop (<http://www.combodo.com/itop)>
+Extensions for Combodo's ITIL Solution: iTop (<http://www.combodo.com/itop>)
 
-This extension began it's life when lndevnull created it and then I have extended and changed portions. Very good work indeed lndevnull.
-See the excellent original work at <https://github.com/lndevnull/itop-extensions.>
+## Acknowledgments
 
-This extension implements some new cluster related classes and extends some of the installed classes.
+This extension is inspired by and builds upon the excellent original work by:
+- **lndevnull** - Original cluster-ci extension (<https://github.com/lndevnull/itop-extensions>)
+- **rogermartensson** - LoadBalancer extension
 
-## New and Extended classes
+Their pioneering work laid the foundation for this generic, iTop 3.2-compatible cluster data model.
 
-These new Classes are visible and useable from the iTop web interface.
+## Overview
 
-* DBCluster (new)
-* WebCluster (new)
-* DBServer (extended)
-* WebServer (extended)
-* Database Schema (extended)
-* Web Application
-* Load Balancer
-* LB Address
+This extension provides a **generic cluster data model** for iTop 3.2+, supporting multiple cluster technologies:
 
-### DBServer / DBCluster / Database Schema
+- **Windows Server Failover Clusters (WSFC)** - File services, Hyper-V, Exchange DAG
+- **SQL Server Always On Availability Groups** - With listener and replica management
+- **Docker Swarm** - Container orchestration with services
+- **Kubernetes** - Modern container platform with workloads
+- **Generic Clusters** - Any other cluster type
 
-DBServer and DBCluster comes from the original work.
+The new model replaces the previous DBCluster/WebCluster architecture with a more flexible, FunctionalCI-based approach that properly represents modern infrastructure.
 
-The DBCluster also has a new Software definition for use in the Software catalogue.
+## Requirements
 
-The original extension renamed Database Schema to DB Instance but I have reverted this and kept the original definition from iTop.
+- iTop 3.0 or higher
+- itop-config-mgmt/3.0.0
+- itop-datacenter-mgmt/3.0.0
 
-#### DBServer
+## Installation
 
-DBServer is the extended with a new Tab called DB Clusters where clusters the DBServer is part of is listed.
+1. Copy the `cluster-ci` directory to your iTop `extensions/` folder
+2. Run the iTop setup/upgrade wizard
+3. The extension will be automatically detected and installed
 
-#### DBCluster
+## New and Extended Classes
 
-DBCluster is a new class that is supposed to define an installed cluster. In iTop this object is defined to connect 1 or more DBServers as part of a cluster.
+### New Classes (13)
 
-The DBCluster is based on the SoftwareInstance interface like the DBServer. Although with some extensions.
+#### Core Cluster Classes
 
-The is a Tab where DBServers are listed as being part of the DBCluster object.
-The Software entry can be used to describe what Cluster software is used but if needed.
+| Class | Description | Icon |
+|-------|-------------|------|
+| **Cluster** | Central cluster CI representing any cluster type | ![cluster](images/cluster.png) |
+| **ClusterResource** | Base class for clustered services/roles | ![cluster-resource](images/cluster-resource.png) |
+| **AvailabilityGroup** | SQL Server Always On Availability Group | ![availability-group](images/availability-group.png) |
+| **DockerService** | Docker Swarm service | ![docker-service](images/docker-service.png) |
+| **KubernetesWorkload** | Kubernetes deployment/statefulset/daemonset | ![kubernetes-workload](images/kubernetes-workload.png) |
+| **LoadBalancer** | Load balancer (hardware/software/cloud) | ![loadbalancer](images/loadbalancer.png) |
+| **LBAddress** | Virtual IP + Port exposed by load balancer | - |
 
-Cluster Type is used to define what type of cluster it is. It is a radio button choice.
+#### Link Classes (6)
 
-From the original work of lndevnull there is a tab to describe Logical Volumes this cluster object is using.
+| Class | Purpose |
+|-------|---------|
+| **lnkClusterToFunctionalCI** | Cluster ↔ Nodes (with role/status) |
+| **lnkClusterToVolume** | Cluster ↔ Shared volumes (CSV, quorum) |
+| **lnkClusterToVLAN** | Cluster ↔ VLAN networks (optional) |
+| **lnkAvailabilityGroupToServer** | AG ↔ Replica servers |
+| **lnkAvailabilityGroupToDatabase** | AG ↔ Database schemas |
+| **lnkLoadBalancerToFunctionalCI** | LoadBalancer ↔ Backend nodes |
 
-#### Database Schema
+### Extended Classes
 
-Database Schema is extended with support for choosing a DBCluster or a DBServer.
+| Class | New Attribute |
+|-------|---------------|
+| **Server** | `cluster_list` - Shows cluster memberships |
+| **DatabaseSchema** | `availabilitygroup_list` - Shows AG memberships |
 
-For REST-users do note that dbserver_id and dbserver_name is removed from DatabaseSchema. Please use softwareinstance_id and
-softwareinstance_name.
+## Usage Examples
 
-### WebServer / WebCluster / Web Application
+### Windows Failover Cluster with SQL Always On
 
-The WebCluster also has a new Software definition for use in the Software catalogue.
+```
+Cluster: "WSFC-SQLCL01"
+  ├─ Type: failover
+  ├─ Quorum: node_and_fileshare
+  ├─ Location: Frankfurt (Redundancy: Munich)
+  ├─ Nodes:
+  │  ├─ SQL01 (active/up)
+  │  └─ SQL02 (passive/up)
+  ├─ VLANs:
+  │  ├─ VLAN-100 (client)
+  │  ├─ VLAN-200 (heartbeat)
+  │  └─ VLAN-300 (storage)
+  └─ Resources:
+     └─ AvailabilityGroup: "AG-Finance"
+        ├─ Listener: SQLAG01:1433
+        ├─ Replicas:
+        │  ├─ SQL01 (primary/synchronous)
+        │  └─ SQL02 (secondary/synchronous)
+        └─ Databases:
+           ├─ FinanceDB
+           └─ FinanceReportDB
+```
 
-#### WebServer
+### Docker Swarm
 
-WebServer is the extended with a new Tab called Web Clusters where clusters the WebServer is part of is listed.
+```
+Cluster: "SWARM-PROD-01"
+  ├─ Type: docker_swarm
+  ├─ Quorum: node_majority
+  ├─ Nodes:
+  │  ├─ DOCK01 (manager/up)
+  │  ├─ DOCK02 (manager/up)
+  │  ├─ DOCK03 (manager/up)
+  │  ├─ DOCK04 (worker/up)
+  │  └─ DOCK05 (worker/up)
+  └─ Resources:
+     ├─ DockerService: "web-frontend"
+     │  ├─ Image: nginx:1.25
+     │  ├─ Replicas: 3/3
+     │  └─ Ports: 80:8080
+     ├─ DockerService: "api-backend"
+     │  ├─ Image: api:2.1
+     │  ├─ Replicas: 5/5
+     │  └─ Ports: 8443:8443
+     └─ DockerService: "redis-cache"
+        ├─ Image: redis:7
+        └─ Replicas: 1/1
+```
 
-#### WebCluster
+### Kubernetes
 
-WebCluster is a new class that is supposed to define an installed cluster. In iTop this object is defined to connect 1 or more WebServers as part of a cluster.
+```
+Cluster: "K8S-PROD-01"
+  ├─ Type: kubernetes
+  ├─ Nodes:
+  │  ├─ K8S-CP01 (control_plane/up)
+  │  ├─ K8S-CP02 (control_plane/up)
+  │  ├─ K8S-W01 (worker/up)
+  │  ├─ K8S-W02 (worker/up)
+  │  └─ K8S-W03 (worker/up)
+  └─ Resources:
+     ├─ KubernetesWorkload: "frontend"
+     │  ├─ Type: deployment
+     │  ├─ Namespace: production
+     │  ├─ Image: frontend:3.0
+     │  └─ Replicas: 3/3
+     ├─ KubernetesWorkload: "postgres"
+     │  ├─ Type: statefulset
+     │  ├─ Namespace: production
+     │  ├─ Image: postgres:15
+     │  └─ Replicas: 3/3
+     └─ KubernetesWorkload: "monitoring"
+        ├─ Type: daemonset
+        ├─ Namespace: monitoring
+        └─ Image: node-exporter:1.7
+```
 
-The DBCluster is based on the SoftwareInstance interface like the WebServer. Although with some extensions.
+### Load Balancer
 
-The is a Tab where WebServers are listed as being part of the WebCluster object.
-The Software entry can be used to describe what Cluster software is used but if needed.
+```
+LoadBalancer: "LB-PROD-01"
+  ├─ Type: hardware
+  ├─ Backend Nodes:
+  │  ├─ WEB01
+  │  ├─ WEB02
+  │  └─ WEB03
+  └─ Addresses:
+     ├─ LBAddress: "web-frontend"
+     │  ├─ Address: 10.0.1.100
+     │  └─ Port: 443
+     └─ LBAddress: "api-backend"
+        ├─ Address: 10.0.1.101
+        └─ Port: 8443
+```
 
-Cluster Type is used to define what type of cluster it is. It is a radio button choice.
+## Impact Analysis
 
-#### Web Application
+The extension provides complete impact chains for outage analysis:
 
-Web Applicaton is extended with support for choosing a WebCluster or a DBServer.
+### Server Failure Impact Chain
 
-Also from the original work from lndevnull, there is a tab for adding Database Schemas.
+```
+Server (fails)
+  ↓
+Cluster (affected)
+  ↓
+ClusterResources (affected)
+  ↓
+DatabaseSchemas (via AvailabilityGroup)
+```
 
-For REST-users do note that webserver_id and webserver_name is removed from WebApplication. Please use softwareinstance_id and
-softwareinstance_name.
-Also from the original work from lndevnull, there is a tab for adding Database Schemas.
+### Load Balancer Impact Chain
 
-### LoadBalancer / LBAddress
-Two new classes that can be used to document and describe relations with a
-Load Balancer.
+```
+Backend Node (fails)
+  ↓
+LoadBalancer (affected)
+  ↓
+LBAddresses (affected)
+```
 
-#### LoadBalancer
-LoadBalancer is used to describe the logical instance that is the functional load balancer. This can be seen as the software that runs Load Balancer.
+## Migration from Previous Version
 
-The FunctionalCI that the software is run on is later documented as their own CI and then connected to the LoadBalancer class as Nodes.
+This version (2.0) introduces a **complete redesign** of the data model:
 
-#### LBAddress
-The Load Balancer is seen as the software that balances an address. The address
-is documented as a LBAddress CI. This CI must be connected to a LoadBalancer but can also be connected to a SoftwareInstance.
+### Breaking Changes
+
+- **DBCluster/WebCluster removed** - Replaced by generic `Cluster` class
+- **LoadBalancer changed** - Now inherits from `FunctionalCI` (was `SoftwareInstance`)
+- **DatabaseSchema.dbserver_id removed** - Use `softwareinstance_id` instead
+- **WebApplication.webserver_id removed** - Use `softwareinstance_id` instead
+
+### Data Migration
+
+When upgrading from the previous version:
+1. Export your existing DBCluster/WebCluster data
+2. Install the new extension
+3. Map old objects to new structure:
+   - DBCluster → Cluster (type=failover)
+   - WebCluster → Cluster (type=failover)
+   - Existing LoadBalancers may need adjustment
+
+## Languages
+
+The extension includes translations for:
+- English (EN)
+- German (DE)
+- French (FR)
+
+## License
+
+AGPL-3.0
+
+## Contributing
+
+Contributions are welcome! Please submit pull requests or issues via GitHub.
+
+## Version History
+
+- **2.0.0** - Complete redesign with generic cluster model, iTop 3.2 support
+- **1.x** - Original DBCluster/WebCluster extension by lndevnull

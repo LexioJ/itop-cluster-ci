@@ -1,107 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0">
+<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.7">
   <classes>
-    <class id="SoftwareInstance" _delta="must_exist">
-      <fields>
-        <field id="system_id" xsi:type="AttributeExternalKey">
-          <is_null_allowed _delta="redefine">true</is_null_allowed>
-        </field>
-      </fields>
-    </class>
-    <class id="Software" _delta="must_exist">
-        <fields>
-          <field id="type" xsi:type="AttributeEnum" _delta="must_exist">
-            <values>
-              <value id="DBCluster" _delta="define">DBCluster</value>
-              <value id="WebCluster" _delta="define">WebCluster</value>
-              <value id="LoadBalancer" _delta="define">LoadBalancer</value>
-            </values>
-        </field>
-    	</fields>
-    </class>
-    <class id="WebServer" _delta="must_exist">
-      <fields>
-        <field id="webcluster_list" xsi:type="AttributeLinkedSetIndirect" _delta="define">
-          <linked_class>lnkWebClusterToSoftwareInstance</linked_class>
-          <ext_key_to_me>softwareinstance_id</ext_key_to_me>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-          <ext_key_to_remote>webcluster_id</ext_key_to_remote>
-          <duplicates/>
-        </field>
-        <field id="webapp_list" xsi:type="AttributeLinkedSet" _delta="redefine">
-          <linked_class>WebApplication</linked_class>
-          <ext_key_to_me>softwareinstance_id</ext_key_to_me>
-          <edit_mode>in_place</edit_mode>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-        </field>
-      </fields>
-      <relations>
-        <relation id="impacts">
-          <neighbours>
-            <neighbour id="webcluster" _delta="define">
-              <attribute>webcluster_list</attribute>
-            </neighbour>
-          </neighbours>
-        </relation>
-      </relations>
-      <presentation>
-        <details>
-          <items>
-            <item id="webcluster_list" _delta="define">
-              <rank>105</rank>
-            </item>
-          </items>
-        </details>
-      </presentation>
-    </class>
-    <class id="DBServer" _delta="must_exist">
-      <fields>
-        <field id="dbcluster_list" xsi:type="AttributeLinkedSetIndirect" _delta="define">
-          <linked_class>lnkDBClusterToSoftwareInstance</linked_class>
-          <ext_key_to_me>softwareinstance_id</ext_key_to_me>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-          <ext_key_to_remote>dbcluster_id</ext_key_to_remote>
-          <duplicates/>
-        </field>
-        <field id="dbschema_list" xsi:type="AttributeLinkedSet" _delta="redefine">
-          <linked_class>DatabaseSchema</linked_class>
-          <ext_key_to_me>softwareinstance_id</ext_key_to_me>
-          <edit_mode>in_place</edit_mode>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-        </field>
-      </fields>
-      <relations>
-        <relation id="impacts">
-          <neighbours>
-            <neighbour id="dbcluster" _delta="define">
-              <attribute>dbcluster_list</attribute>
-            </neighbour>
-          </neighbours>
-        </relation>
-      </relations>
-      <presentation>
-        <details>
-          <items>
-            <item id="dbcluster_list" _delta="define">
-              <rank>105</rank>
-            </item>
-          </items>
-        </details>
-      </presentation>
-    </class>
-    <class id="LoadBalancer" _delta="define">
-      <parent>SoftwareInstance</parent>
+    <!-- ==========================================================================
+         CLUSTER - Central cluster CI (extends FunctionalCI)
+         ========================================================================== -->
+    <class id="Cluster" _delta="define">
+      <parent>FunctionalCI</parent>
       <properties>
-        <category>bizmodel,searchable</category>
+        <category>bizmodel,searchable,configmgmt</category>
         <abstract>false</abstract>
         <key_type>autoincrement</key_type>
-        <db_table>loadbalancer</db_table>
+        <db_table>cluster</db_table>
         <db_key_field>id</db_key_field>
-        <db_final_class_field/>
+        <db_final_class_field>finalclass</db_final_class_field>
         <naming>
           <format>%1$s</format>
           <attributes>
@@ -109,7 +20,7 @@
           </attributes>
         </naming>
         <display_template/>
-        <icon>images/webcluster.png</icon>
+        <icon>images/cluster.png</icon>
         <reconciliation>
           <attributes>
             <attribute id="name"/>
@@ -119,338 +30,377 @@
         </reconciliation>
       </properties>
       <fields>
-        <field id="lbnodes_list" xsi:type="AttributeLinkedSetIndirect">
-          <linked_class>lnkLoadBalancerToFunctionalCI</linked_class>
-          <ext_key_to_me>loadbalancer_id</ext_key_to_me>
+        <field id="cluster_type" xsi:type="AttributeEnum">
+          <sql>cluster_type</sql>
+          <values>
+            <value id="failover">failover</value>
+            <value id="nlb">nlb</value>
+            <value id="storage_spaces_direct">storage_spaces_direct</value>
+            <value id="docker_swarm">docker_swarm</value>
+            <value id="kubernetes">kubernetes</value>
+            <value id="generic">generic</value>
+          </values>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="quorum_type" xsi:type="AttributeEnum">
+          <sql>quorum_type</sql>
+          <values>
+            <value id="node_majority">node_majority</value>
+            <value id="node_and_disk">node_and_disk</value>
+            <value id="node_and_fileshare">node_and_fileshare</value>
+            <value id="cloud_witness">cloud_witness</value>
+            <value id="no_quorum">no_quorum</value>
+          </values>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="quorum_resource" xsi:type="AttributeString">
+          <sql>quorum_resource</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="cluster_ip" xsi:type="AttributeString">
+          <sql>cluster_ip</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="cluster_hostname" xsi:type="AttributeString">
+          <sql>cluster_hostname</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="location_id" xsi:type="AttributeExternalKey">
+          <sql>location_id</sql>
+          <target_class>Location</target_class>
+          <is_null_allowed>true</is_null_allowed>
+          <on_target_delete>DEL_MANUAL</on_target_delete>
+          <allow_target_creation>true</allow_target_creation>
+        </field>
+        <field id="location_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>location_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="redundancy_location_id" xsi:type="AttributeExternalKey">
+          <sql>redundancy_location_id</sql>
+          <target_class>Location</target_class>
+          <is_null_allowed>true</is_null_allowed>
+          <on_target_delete>DEL_MANUAL</on_target_delete>
+          <allow_target_creation>true</allow_target_creation>
+        </field>
+        <field id="redundancy_location_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>redundancy_location_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="nodes_list" xsi:type="AttributeLinkedSetIndirect">
+          <linked_class>lnkClusterToFunctionalCI</linked_class>
+          <ext_key_to_me>cluster_id</ext_key_to_me>
           <count_min>0</count_min>
           <count_max>0</count_max>
           <ext_key_to_remote>functionalci_id</ext_key_to_remote>
           <duplicates/>
         </field>
-        <field id="lbaddresses_list" xsi:type="AttributeLinkedSet">
-          <linked_class>LBAddress</linked_class>
-          <ext_key_to_me>loadbalancer_id</ext_key_to_me>
+        <field id="resources_list" xsi:type="AttributeLinkedSet">
+          <linked_class>ClusterResource</linked_class>
+          <ext_key_to_me>cluster_id</ext_key_to_me>
           <edit_mode>in_place</edit_mode>
           <count_min>0</count_min>
           <count_max>0</count_max>
         </field>
-      </fields>
-      <relations>
-        <relation id="impacts">
-          <neighbours>
-            <neighbour id="functionalci" _delta="define">
-              <query_down>SELECT FunctionalCI AS lb JOIN lnkLoadBalancerToFunctionalCI AS l1 ON l1.functionalci_id=lb.id WHERE l1.loadbalancer_id = :this-&gt;id</query_down>
-              <query_up>SELECT FunctionalCI AS lb JOIN lnkLoadBalancerToFunctionalCI AS l1 ON l1.functionalci_id=lb.id WHERE l1.loadbalancer_id = :this-&gt;id</query_up>
-            </neighbour>
-            <neighbour id="lbaddress" _delta="define">
-              <attribute>lbaddresses_list</attribute>
-            </neighbour>
-          </neighbours>
-        </relation>
-      </relations>
-      <methods />
-      <presentation>
-        <details>
-          <items>
-            <item id="name">
-              <rank>10</rank>
-            </item>
-            <item id="org_id">
-              <rank>20</rank>
-            </item>
-            <item id="status">
-              <rank>30</rank>
-            </item>
-            <item id="business_criticity">
-              <rank>40</rank>
-            </item>
-            <item id="software_id">
-              <rank>60</rank>
-            </item>
-            <item id="softwarelicence_id">
-              <rank>70</rank>
-            </item>
-            <item id="move2production">
-              <rank>90</rank>
-            </item>
-            <item id="description">
-              <rank>100</rank>
-            </item>
-            <item id="contacts_list">
-              <rank>110</rank>
-            </item>
-            <item id="documents_list">
-              <rank>120</rank>
-            </item>
-            <item id="tickets_list">
-              <rank>130</rank>
-            </item>
-            <item id="applicationsolution_list">
-              <rank>140</rank>
-            </item>
-            <item id="lbnodes_list">
-              <rank>150</rank>
-            </item>
-            <item id="lbaddresses_list">
-              <rank>155</rank>
-            </item>
-            <item id="providercontracts_list">
-              <rank>160</rank>
-            </item>
-            <item id="services_list">
-              <rank>170</rank>
-            </item>
-          </items>
-        </details>
-        <search>
-          <items>
-            <item id="name">
-              <rank>10</rank>
-            </item>
-            <item id="org_id">
-              <rank>20</rank>
-            </item>
-            <item id="business_criticity">
-              <rank>30</rank>
-            </item>
-            <item id="move2production">
-              <rank>40</rank>
-            </item>
-          </items>
-        </search>
-        <list>
-          <items>
-            <item id="org_id">
-              <rank>10</rank>
-            </item>
-            <item id="business_criticity">
-              <rank>20</rank>
-            </item>
-          </items>
-        </list>
-      </presentation>
-    </class>
-    <class id="DatabaseSchema" _delta="must_exist">
-	    <properties>
-        <obsolescence>
-          <condition _delta="redefine">softwareinstance_id_obsolescence_flag</condition>
-        </obsolescence>
-      </properties>
-      <fields>
-        <field id="dbserver_id" _delta="delete" />
-        <field id="dbserver_name" _delta="delete"/>
-        <field id="softwareinstance_id" xsi:type="AttributeExternalKey" _delta="define">
-          <sql>dbserver_id</sql>
-          <sql>softwareinstance_id</sql>
-          <target_class>SoftwareInstance</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_MANUAL</on_target_delete>
-          <allow_target_creation>false</allow_target_creation> 
-          <filter><![CDATA[SELECT SoftwareInstance WHERE finalclass IN ('DBCluster','DBServer')]]></filter>
-        </field>
-        <field id="softwareinstance_name" xsi:type="AttributeExternalField" _delta="define">
-          <extkey_attcode>softwareinstance_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
-        <field id="webapplications_list" xsi:type="AttributeLinkedSetIndirect" _delta="define">
-          <linked_class>lnkDatabaseSchemaToWebApplication</linked_class>
-          <ext_key_to_me>databaseinstance_id</ext_key_to_me>
+        <field id="volumes_list" xsi:type="AttributeLinkedSetIndirect">
+          <linked_class>lnkClusterToVolume</linked_class>
+          <ext_key_to_me>cluster_id</ext_key_to_me>
           <count_min>0</count_min>
           <count_max>0</count_max>
-          <ext_key_to_remote>webapplication_id</ext_key_to_remote>
+          <ext_key_to_remote>volume_id</ext_key_to_remote>
           <duplicates/>
         </field>
-      </fields>
-      <relations>
-        <relation id="impacts" _delta="define">
-          <neighbours>
-            <neighbour id="webapplication" _delta="define">
-              <attribute>webapplications_list</attribute>
-            </neighbour>
-          </neighbours>
-        </relation>
-      </relations>
-      <presentation>
-        <details>
-          <items>
-            <item id="dbserver_id" _delta="delete">
-              <rank>30</rank>
-            </item>
-            <item id="softwareinstance_id" _delta="define">
-              <rank>35</rank>
-            </item>
-            <item id="webapplications_list" _delta="define">
-              <rank>105</rank>
-            </item>
-         </items>
-       </details>
-     </presentation>
-    </class>
-    <class id="WebApplication" _delta="must_exist">
-	    <properties>
-        <obsolescence>
-          <condition _delta="redefine">softwareinstance_id_obsolescence_flag</condition>
-        </obsolescence>
-      </properties>
-      <fields>
-        <field id="webserver_id" _delta="delete" />
-        <field id="webserver_name" _delta="delete"/>
-        <field id="softwareinstance_id" xsi:type="AttributeExternalKey" _delta="define">
-          <sql>webserver_id</sql>
-          <sql>softwareinstance_id</sql>
-          <target_class>SoftwareInstance</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_MANUAL</on_target_delete>
-          <allow_target_creation>false</allow_target_creation> 
-          <filter><![CDATA[SELECT SoftwareInstance WHERE finalclass IN ('WebCluster','WebServer')]]></filter>
-        </field>
-        <field id="softwareinstance_name" xsi:type="AttributeExternalField" _delta="define">
-          <extkey_attcode>softwareinstance_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
-        <field id="dbschema_list" xsi:type="AttributeLinkedSetIndirect" _delta="define">
-          <linked_class>lnkDatabaseSchemaToWebApplication</linked_class>
-          <ext_key_to_me>webapplication_id</ext_key_to_me>
+        <field id="vlans_list" xsi:type="AttributeLinkedSetIndirect">
+          <linked_class>lnkClusterToVLAN</linked_class>
+          <ext_key_to_me>cluster_id</ext_key_to_me>
           <count_min>0</count_min>
           <count_max>0</count_max>
-          <ext_key_to_remote>databaseinstance_id</ext_key_to_remote>
+          <ext_key_to_remote>vlan_id</ext_key_to_remote>
           <duplicates/>
-        </field>
-        <field id="lbaddress_id" xsi:type="AttributeExternalKey" _delta="define">
-          <sql>lbaddress_id</sql>
-          <target_class>LBAddress</target_class>
-          <is_null_allowed>true</is_null_allowed>
-          <on_target_delete>DEL_MANUAL</on_target_delete>
-          <allow_target_creation>false</allow_target_creation> 
-        </field>
-        <field id="lbaddress_name" xsi:type="AttributeExternalField" _delta="define">
-          <extkey_attcode>lbaddress_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
         </field>
       </fields>
       <relations>
         <relation id="impacts">
           <neighbours>
-            <neighbour id="lbaddress" _delta="define">
-              <attribute>lbaddress_id</attribute>
+            <neighbour id="clusterresource">
+              <attribute>resources_list</attribute>
+            </neighbour>
+            <neighbour id="functionalci">
+              <query_down>SELECT FunctionalCI AS c JOIN lnkClusterToFunctionalCI AS l1 ON l1.functionalci_id=c.id WHERE l1.cluster_id = :this-&gt;id</query_down>
+              <query_up>SELECT FunctionalCI AS c JOIN lnkClusterToFunctionalCI AS l1 ON l1.functionalci_id=c.id WHERE l1.cluster_id = :this-&gt;id</query_up>
             </neighbour>
           </neighbours>
         </relation>
       </relations>
-      <presentation>
-        <details>
-          <items>
-            <item id="webserver_id" _delta="delete">
-              <rank>30</rank>
-            </item>
-            <item id="lbaddress_id" _delta="define">
-              <rank>34</rank>
-            </item>
-            <item id="softwareinstance_id" _delta="define">
-              <rank>35</rank>
-            </item>
-            <item id="dbschema_list" _delta="define">
-              <rank>115</rank>
-            </item>
-          </items>
-        </details>
-      </presentation>
-    </class>
-    <class id="lnkDatabaseSchemaToWebApplication" _delta="define">
-      <parent>cmdbAbstractObject</parent>
-      <properties>
-        <is_link>1</is_link>
-        <category>bizmodel</category>
-        <abstract>false</abstract>
-        <key_type>autoincrement</key_type>
-        <db_table>lnkdatabaseschematowebapplication</db_table>
-        <db_key_field>id</db_key_field>
-        <db_final_class_field/>
-        <naming>
-          <format>%1$s %2$s</format>
-          <attributes>
-            <attribute id="databaseinstance_id"/>
-            <attribute id="webapplication_id"/>
-          </attributes>
-        </naming>
-        <display_template/>
-        <icon/>
-        <reconciliation>
-          <attributes>
-            <attribute id="databaseinstance_id"/>
-            <attribute id="webapplication_id"/>
-          </attributes>
-        </reconciliation>
-      </properties>
-      <fields>
-        <field id="databaseinstance_id" xsi:type="AttributeExternalKey">
-          <sql>databaseinstance_id</sql>
-          <target_class>DatabaseSchema</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
-        </field>
-        <field id="databaseinstance_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>databaseinstance_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
-        <field id="webapplication_id" xsi:type="AttributeExternalKey">
-          <sql>webapplication_id</sql>
-          <target_class>WebApplication</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
-        </field>
-        <field id="webapplication_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>webapplication_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
-      </fields>
       <methods/>
       <presentation>
         <details>
           <items>
-            <item id="databaseinstance_id">
+            <item id="name">
               <rank>10</rank>
             </item>
-            <item id="webapplication_id">
+            <item id="org_id">
               <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="cluster_type">
+              <rank>50</rank>
+            </item>
+            <item id="quorum_type">
+              <rank>60</rank>
+            </item>
+            <item id="quorum_resource">
+              <rank>70</rank>
+            </item>
+            <item id="cluster_ip">
+              <rank>80</rank>
+            </item>
+            <item id="cluster_hostname">
+              <rank>90</rank>
+            </item>
+            <item id="location_id">
+              <rank>100</rank>
+            </item>
+            <item id="redundancy_location_id">
+              <rank>110</rank>
+            </item>
+            <item id="move2production">
+              <rank>120</rank>
+            </item>
+            <item id="description">
+              <rank>130</rank>
+            </item>
+            <item id="contacts_list">
+              <rank>140</rank>
+            </item>
+            <item id="documents_list">
+              <rank>150</rank>
+            </item>
+            <item id="tickets_list">
+              <rank>160</rank>
+            </item>
+            <item id="applicationsolution_list">
+              <rank>170</rank>
+            </item>
+            <item id="nodes_list">
+              <rank>180</rank>
+            </item>
+            <item id="resources_list">
+              <rank>190</rank>
+            </item>
+            <item id="volumes_list">
+              <rank>200</rank>
+            </item>
+            <item id="vlans_list">
+              <rank>210</rank>
+            </item>
+            <item id="providercontracts_list">
+              <rank>220</rank>
+            </item>
+            <item id="services_list">
+              <rank>230</rank>
             </item>
           </items>
         </details>
         <search>
           <items>
-            <item id="databaseinstance_id">
+            <item id="name">
               <rank>10</rank>
             </item>
-            <item id="webapplication_id">
+            <item id="org_id">
               <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="cluster_type">
+              <rank>50</rank>
+            </item>
+            <item id="location_id">
+              <rank>60</rank>
+            </item>
+            <item id="move2production">
+              <rank>70</rank>
             </item>
           </items>
         </search>
         <list>
           <items>
-            <item id="databaseinstance_id">
+            <item id="org_id">
               <rank>10</rank>
             </item>
-            <item id="webapplication_id">
+            <item id="business_criticity">
               <rank>20</rank>
+            </item>
+            <item id="cluster_type">
+              <rank>40</rank>
+            </item>
+            <item id="location_id">
+              <rank>50</rank>
             </item>
           </items>
         </list>
       </presentation>
     </class>
-    <class id="lnkDBClusterToVolume" _delta="define">
+
+    <!-- ==========================================================================
+         LNKCLUSTERFUNCTIONALCI - Link class for Cluster to FunctionalCI (nodes)
+         ========================================================================== -->
+    <class id="lnkClusterToFunctionalCI" _delta="define">
       <parent>cmdbAbstractObject</parent>
       <properties>
         <is_link>1</is_link>
         <category>bizmodel,configmgmt</category>
         <abstract>false</abstract>
         <key_type>autoincrement</key_type>
-        <db_table>lnkdbclustertovolume</db_table>
+        <db_table>lnkclustertofunctionalci</db_table>
         <db_key_field>id</db_key_field>
         <db_final_class_field/>
         <naming>
-          <format>%1$s</format>
+          <format>%1$s - %2$s</format>
           <attributes>
+            <attribute id="cluster_id"/>
+            <attribute id="functionalci_id"/>
+          </attributes>
+        </naming>
+        <display_template/>
+        <icon/>
+        <reconciliation>
+          <attributes>
+            <attribute id="cluster_id"/>
+            <attribute id="functionalci_id"/>
+          </attributes>
+        </reconciliation>
+      </properties>
+      <fields>
+        <field id="cluster_id" xsi:type="AttributeExternalKey">
+          <sql>cluster_id</sql>
+          <target_class>Cluster</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="cluster_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>cluster_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="functionalci_id" xsi:type="AttributeExternalKey">
+          <sql>functionalci_id</sql>
+          <target_class>FunctionalCI</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="functionalci_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>functionalci_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="node_role" xsi:type="AttributeEnum">
+          <sql>node_role</sql>
+          <values>
+            <value id="active">active</value>
+            <value id="passive">passive</value>
+            <value id="witness">witness</value>
+            <value id="arbiter">arbiter</value>
+            <value id="manager">manager</value>
+            <value id="worker">worker</value>
+            <value id="control_plane">control_plane</value>
+          </values>
+          <default_value>active</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="node_status" xsi:type="AttributeEnum">
+          <sql>node_status</sql>
+          <values>
+            <value id="up">up</value>
+            <value id="down">down</value>
+            <value id="paused">paused</value>
+            <value id="joining">joining</value>
+            <value id="draining">draining</value>
+          </values>
+          <default_value>up</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+      </fields>
+      <methods/>
+      <presentation>
+        <details>
+          <items>
+            <item id="cluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="functionalci_id">
+              <rank>20</rank>
+            </item>
+            <item id="node_role">
+              <rank>30</rank>
+            </item>
+            <item id="node_status">
+              <rank>40</rank>
+            </item>
+          </items>
+        </details>
+        <search>
+          <items>
+            <item id="cluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="functionalci_id">
+              <rank>20</rank>
+            </item>
+            <item id="node_role">
+              <rank>30</rank>
+            </item>
+            <item id="node_status">
+              <rank>40</rank>
+            </item>
+          </items>
+        </search>
+        <list>
+          <items>
+            <item id="cluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="functionalci_id">
+              <rank>20</rank>
+            </item>
+            <item id="node_role">
+              <rank>30</rank>
+            </item>
+            <item id="node_status">
+              <rank>40</rank>
+            </item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+
+    <!-- ==========================================================================
+         LNKCLUSTERTOVOLUME - Link class for Cluster to LogicalVolume
+         ========================================================================== -->
+    <class id="lnkClusterToVolume" _delta="define">
+      <parent>cmdbAbstractObject</parent>
+      <properties>
+        <is_link>1</is_link>
+        <category>bizmodel,configmgmt</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>lnkclustertovolume</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field/>
+        <naming>
+          <format>%1$s - %2$s</format>
+          <attributes>
+            <attribute id="cluster_id"/>
             <attribute id="volume_id"/>
           </attributes>
         </naming>
@@ -458,12 +408,22 @@
         <icon/>
         <reconciliation>
           <attributes>
+            <attribute id="cluster_id"/>
             <attribute id="volume_id"/>
-            <attribute id="dbcluster_id"/>
           </attributes>
         </reconciliation>
       </properties>
       <fields>
+        <field id="cluster_id" xsi:type="AttributeExternalKey">
+          <sql>cluster_id</sql>
+          <target_class>Cluster</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="cluster_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>cluster_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
         <field id="volume_id" xsi:type="AttributeExternalKey">
           <sql>volume_id</sql>
           <target_class>LogicalVolume</target_class>
@@ -474,14 +434,796 @@
           <extkey_attcode>volume_id</extkey_attcode>
           <target_attcode>name</target_attcode>
         </field>
-        <field id="dbcluster_id" xsi:type="AttributeExternalKey">
-          <sql>dbcluster_id</sql>
-          <target_class>DBCluster</target_class>
+        <field id="volume_usage" xsi:type="AttributeEnum">
+          <sql>volume_usage</sql>
+          <values>
+            <value id="csv">csv</value>
+            <value id="quorum_disk">quorum_disk</value>
+            <value id="data">data</value>
+            <value id="shared_folder">shared_folder</value>
+            <value id="witness">witness</value>
+          </values>
+          <default_value>data</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+      </fields>
+      <methods/>
+      <presentation>
+        <details>
+          <items>
+            <item id="cluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="volume_id">
+              <rank>20</rank>
+            </item>
+            <item id="volume_usage">
+              <rank>30</rank>
+            </item>
+          </items>
+        </details>
+        <search>
+          <items>
+            <item id="cluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="volume_id">
+              <rank>20</rank>
+            </item>
+            <item id="volume_usage">
+              <rank>30</rank>
+            </item>
+          </items>
+        </search>
+        <list>
+          <items>
+            <item id="cluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="volume_id">
+              <rank>20</rank>
+            </item>
+            <item id="volume_usage">
+              <rank>30</rank>
+            </item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+
+    <!-- ==========================================================================
+         LNKCLUSTERTOVLAN - Link class for Cluster to VLAN (optional, _delta="if_exists")
+         ========================================================================== -->
+    <class id="lnkClusterToVLAN" _delta="if_exists">
+      <parent>cmdbAbstractObject</parent>
+      <properties>
+        <is_link>1</is_link>
+        <category>bizmodel,configmgmt</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>lnkclustertovlan</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field/>
+        <naming>
+          <format>%1$s - %2$s</format>
+          <attributes>
+            <attribute id="cluster_id"/>
+            <attribute id="vlan_id"/>
+          </attributes>
+        </naming>
+        <display_template/>
+        <icon/>
+        <reconciliation>
+          <attributes>
+            <attribute id="cluster_id"/>
+            <attribute id="vlan_id"/>
+          </attributes>
+        </reconciliation>
+      </properties>
+      <fields>
+        <field id="cluster_id" xsi:type="AttributeExternalKey">
+          <sql>cluster_id</sql>
+          <target_class>Cluster</target_class>
           <is_null_allowed>false</is_null_allowed>
           <on_target_delete>DEL_AUTO</on_target_delete>
         </field>
-        <field id="dbcluster_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>dbcluster_id</extkey_attcode>
+        <field id="cluster_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>cluster_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="vlan_id" xsi:type="AttributeExternalKey">
+          <sql>vlan_id</sql>
+          <target_class>VLAN</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="vlan_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>vlan_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="network_usage" xsi:type="AttributeEnum">
+          <sql>network_usage</sql>
+          <values>
+            <value id="heartbeat">heartbeat</value>
+            <value id="client">client</value>
+            <value id="storage">storage</value>
+            <value id="management">management</value>
+            <value id="replication">replication</value>
+          </values>
+          <default_value>client</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+      </fields>
+      <methods/>
+      <presentation>
+        <details>
+          <items>
+            <item id="cluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="vlan_id">
+              <rank>20</rank>
+            </item>
+            <item id="network_usage">
+              <rank>30</rank>
+            </item>
+          </items>
+        </details>
+        <search>
+          <items>
+            <item id="cluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="vlan_id">
+              <rank>20</rank>
+            </item>
+            <item id="network_usage">
+              <rank>30</rank>
+            </item>
+          </items>
+        </search>
+        <list>
+          <items>
+            <item id="cluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="vlan_id">
+              <rank>20</rank>
+            </item>
+            <item id="network_usage">
+              <rank>30</rank>
+            </item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+
+    <!-- ==========================================================================
+         CLUSTERRESOURCE - Base class for clustered services (extends FunctionalCI)
+         ========================================================================== -->
+    <class id="ClusterResource" _delta="define">
+      <parent>FunctionalCI</parent>
+      <properties>
+        <category>bizmodel,searchable,configmgmt</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>clusterresource</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field>finalclass</db_final_class_field>
+        <naming>
+          <format>%1$s</format>
+          <attributes>
+            <attribute id="name"/>
+          </attributes>
+        </naming>
+        <display_template/>
+        <icon>images/cluster-resource.png</icon>
+        <reconciliation>
+          <attributes>
+            <attribute id="name"/>
+            <attribute id="org_id"/>
+            <attribute id="organization_name"/>
+            <attribute id="cluster_id"/>
+          </attributes>
+        </reconciliation>
+      </properties>
+      <fields>
+        <field id="cluster_id" xsi:type="AttributeExternalKey">
+          <sql>cluster_id</sql>
+          <target_class>Cluster</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_MANUAL</on_target_delete>
+          <allow_target_creation>false</allow_target_creation>
+        </field>
+        <field id="cluster_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>cluster_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="resource_type" xsi:type="AttributeEnum">
+          <sql>resource_type</sql>
+          <values>
+            <value id="sql_ag">sql_ag</value>
+            <value id="file_server">file_server</value>
+            <value id="dhcp">dhcp</value>
+            <value id="print_server">print_server</value>
+            <value id="generic_service">generic_service</value>
+            <value id="docker_service">docker_service</value>
+            <value id="kubernetes_workload">kubernetes_workload</value>
+            <value id="hyper_v">hyper_v</value>
+            <value id="dns">dns</value>
+            <value id="exchange_dag">exchange_dag</value>
+          </values>
+          <default_value>generic_service</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="status" xsi:type="AttributeEnum">
+          <sql>status</sql>
+          <values>
+            <value id="online">online</value>
+            <value id="offline">offline</value>
+            <value id="partially_online">partially_online</value>
+            <value id="failed">failed</value>
+            <value id="pending">pending</value>
+          </values>
+          <default_value>online</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="virtual_ip" xsi:type="AttributeString">
+          <sql>virtual_ip</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="virtual_hostname" xsi:type="AttributeString">
+          <sql>virtual_hostname</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="owner_node_id" xsi:type="AttributeExternalKey">
+          <sql>owner_node_id</sql>
+          <target_class>FunctionalCI</target_class>
+          <is_null_allowed>true</is_null_allowed>
+          <on_target_delete>DEL_MANUAL</on_target_delete>
+          <allow_target_creation>false</allow_target_creation>
+        </field>
+        <field id="owner_node_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>owner_node_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+      </fields>
+      <relations>
+        <relation id="impacts">
+          <neighbours>
+            <neighbour id="cluster">
+              <attribute>cluster_id</attribute>
+            </neighbour>
+          </neighbours>
+        </relation>
+      </relations>
+      <methods/>
+      <presentation>
+        <details>
+          <items>
+            <item id="name">
+              <rank>10</rank>
+            </item>
+            <item id="org_id">
+              <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="cluster_id">
+              <rank>50</rank>
+            </item>
+            <item id="resource_type">
+              <rank>60</rank>
+            </item>
+            <item id="virtual_ip">
+              <rank>70</rank>
+            </item>
+            <item id="virtual_hostname">
+              <rank>80</rank>
+            </item>
+            <item id="owner_node_id">
+              <rank>90</rank>
+            </item>
+            <item id="move2production">
+              <rank>100</rank>
+            </item>
+            <item id="description">
+              <rank>110</rank>
+            </item>
+            <item id="contacts_list">
+              <rank>120</rank>
+            </item>
+            <item id="documents_list">
+              <rank>130</rank>
+            </item>
+            <item id="tickets_list">
+              <rank>140</rank>
+            </item>
+            <item id="applicationsolution_list">
+              <rank>150</rank>
+            </item>
+            <item id="providercontracts_list">
+              <rank>160</rank>
+            </item>
+            <item id="services_list">
+              <rank>170</rank>
+            </item>
+          </items>
+        </details>
+        <search>
+          <items>
+            <item id="name">
+              <rank>10</rank>
+            </item>
+            <item id="org_id">
+              <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="cluster_id">
+              <rank>50</rank>
+            </item>
+            <item id="resource_type">
+              <rank>60</rank>
+            </item>
+            <item id="move2production">
+              <rank>70</rank>
+            </item>
+          </items>
+        </search>
+        <list>
+          <items>
+            <item id="org_id">
+              <rank>10</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>20</rank>
+            </item>
+            <item id="cluster_id">
+              <rank>40</rank>
+            </item>
+            <item id="resource_type">
+              <rank>50</rank>
+            </item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+
+    <!-- ==========================================================================
+         AVAILABILITYGROUP - SQL Server Always On AG (extends ClusterResource)
+         ========================================================================== -->
+    <class id="AvailabilityGroup" _delta="define">
+      <parent>ClusterResource</parent>
+      <properties>
+        <category>bizmodel,searchable,configmgmt</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>availabilitygroup</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field>finalclass</db_final_class_field>
+        <naming>
+          <format>%1$s</format>
+          <attributes>
+            <attribute id="name"/>
+          </attributes>
+        </naming>
+        <display_template/>
+        <icon>images/availability-group.png</icon>
+        <reconciliation>
+          <attributes>
+            <attribute id="name"/>
+            <attribute id="org_id"/>
+            <attribute id="organization_name"/>
+            <attribute id="cluster_id"/>
+          </attributes>
+        </reconciliation>
+      </properties>
+      <fields>
+        <field id="listener_name" xsi:type="AttributeString">
+          <sql>listener_name</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="listener_ip" xsi:type="AttributeString">
+          <sql>listener_ip</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="listener_port" xsi:type="AttributeInteger">
+          <sql>listener_port</sql>
+          <default_value>1433</default_value>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="availability_mode" xsi:type="AttributeEnum">
+          <sql>availability_mode</sql>
+          <values>
+            <value id="synchronous_commit">synchronous_commit</value>
+            <value id="asynchronous_commit">asynchronous_commit</value>
+          </values>
+          <default_value>synchronous_commit</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="failover_mode" xsi:type="AttributeEnum">
+          <sql>failover_mode</sql>
+          <values>
+            <value id="automatic">automatic</value>
+            <value id="manual">manual</value>
+          </values>
+          <default_value>manual</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="replicas_list" xsi:type="AttributeLinkedSetIndirect">
+          <linked_class>lnkAvailabilityGroupToServer</linked_class>
+          <ext_key_to_me>ag_id</ext_key_to_me>
+          <count_min>0</count_min>
+          <count_max>0</count_max>
+          <ext_key_to_remote>server_id</ext_key_to_remote>
+          <duplicates/>
+        </field>
+        <field id="databases_list" xsi:type="AttributeLinkedSetIndirect">
+          <linked_class>lnkAvailabilityGroupToDatabase</linked_class>
+          <ext_key_to_me>ag_id</ext_key_to_me>
+          <count_min>0</count_min>
+          <count_max>0</count_max>
+          <ext_key_to_remote>databaseschema_id</ext_key_to_remote>
+          <duplicates/>
+        </field>
+      </fields>
+      <relations>
+        <relation id="impacts">
+          <neighbours>
+            <neighbour id="databaseschema">
+              <attribute>databases_list</attribute>
+            </neighbour>
+            <neighbour id="functionalci">
+              <query_down>SELECT FunctionalCI AS s JOIN lnkAvailabilityGroupToServer AS l1 ON l1.server_id=s.id WHERE l1.ag_id = :this-&gt;id</query_down>
+              <query_up>SELECT FunctionalCI AS s JOIN lnkAvailabilityGroupToServer AS l1 ON l1.server_id=s.id WHERE l1.ag_id = :this-&gt;id</query_up>
+            </neighbour>
+          </neighbours>
+        </relation>
+      </relations>
+      <methods/>
+      <presentation>
+        <details>
+          <items>
+            <item id="name">
+              <rank>10</rank>
+            </item>
+            <item id="org_id">
+              <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="cluster_id">
+              <rank>50</rank>
+            </item>
+            <item id="listener_name">
+              <rank>60</rank>
+            </item>
+            <item id="listener_ip">
+              <rank>70</rank>
+            </item>
+            <item id="listener_port">
+              <rank>80</rank>
+            </item>
+            <item id="availability_mode">
+              <rank>90</rank>
+            </item>
+            <item id="failover_mode">
+              <rank>100</rank>
+            </item>
+            <item id="move2production">
+              <rank>110</rank>
+            </item>
+            <item id="description">
+              <rank>120</rank>
+            </item>
+            <item id="contacts_list">
+              <rank>130</rank>
+            </item>
+            <item id="documents_list">
+              <rank>140</rank>
+            </item>
+            <item id="tickets_list">
+              <rank>150</rank>
+            </item>
+            <item id="applicationsolution_list">
+              <rank>160</rank>
+            </item>
+            <item id="replicas_list">
+              <rank>170</rank>
+            </item>
+            <item id="databases_list">
+              <rank>180</rank>
+            </item>
+            <item id="providercontracts_list">
+              <rank>190</rank>
+            </item>
+            <item id="services_list">
+              <rank>200</rank>
+            </item>
+          </items>
+        </details>
+        <search>
+          <items>
+            <item id="name">
+              <rank>10</rank>
+            </item>
+            <item id="org_id">
+              <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="cluster_id">
+              <rank>50</rank>
+            </item>
+            <item id="listener_name">
+              <rank>60</rank>
+            </item>
+            <item id="move2production">
+              <rank>70</rank>
+            </item>
+          </items>
+        </search>
+        <list>
+          <items>
+            <item id="org_id">
+              <rank>10</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>20</rank>
+            </item>
+            <item id="cluster_id">
+              <rank>40</rank>
+            </item>
+            <item id="listener_name">
+              <rank>50</rank>
+            </item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+
+    <!-- ==========================================================================
+         LNKA VAILABILITYGROUPTOSERVER - Link class for AG to Server (replicas)
+         ========================================================================== -->
+    <class id="lnkAvailabilityGroupToServer" _delta="define">
+      <parent>cmdbAbstractObject</parent>
+      <properties>
+        <is_link>1</is_link>
+        <category>bizmodel,configmgmt</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>lnkavailabilitygrouptoserver</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field/>
+        <naming>
+          <format>%1$s - %2$s</format>
+          <attributes>
+            <attribute id="ag_id"/>
+            <attribute id="server_id"/>
+          </attributes>
+        </naming>
+        <display_template/>
+        <icon/>
+        <reconciliation>
+          <attributes>
+            <attribute id="ag_id"/>
+            <attribute id="server_id"/>
+          </attributes>
+        </reconciliation>
+      </properties>
+      <fields>
+        <field id="ag_id" xsi:type="AttributeExternalKey">
+          <sql>ag_id</sql>
+          <target_class>AvailabilityGroup</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="ag_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>ag_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="server_id" xsi:type="AttributeExternalKey">
+          <sql>server_id</sql>
+          <target_class>FunctionalCI</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="server_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>server_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="replica_role" xsi:type="AttributeEnum">
+          <sql>replica_role</sql>
+          <values>
+            <value id="primary">primary</value>
+            <value id="secondary">secondary</value>
+          </values>
+          <default_value>secondary</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="sync_state" xsi:type="AttributeEnum">
+          <sql>sync_state</sql>
+          <values>
+            <value id="synchronized">synchronized</value>
+            <value id="synchronizing">synchronizing</value>
+            <value id="not_synchronizing">not_synchronizing</value>
+            <value id="reverting">reverting</value>
+            <value id="initializing">initializing</value>
+          </values>
+          <default_value>synchronizing</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="availability_mode" xsi:type="AttributeEnum">
+          <sql>availability_mode</sql>
+          <values>
+            <value id="synchronous_commit">synchronous_commit</value>
+            <value id="asynchronous_commit">asynchronous_commit</value>
+          </values>
+          <default_value>synchronous_commit</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="failover_mode" xsi:type="AttributeEnum">
+          <sql>failover_mode</sql>
+          <values>
+            <value id="automatic">automatic</value>
+            <value id="manual">manual</value>
+          </values>
+          <default_value>manual</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+        <field id="readable_secondary" xsi:type="AttributeEnum">
+          <sql>readable_secondary</sql>
+          <values>
+            <value id="yes">yes</value>
+            <value id="no">no</value>
+            <value id="read_intent_only">read_intent_only</value>
+          </values>
+          <default_value>no</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
+        </field>
+      </fields>
+      <methods/>
+      <presentation>
+        <details>
+          <items>
+            <item id="ag_id">
+              <rank>10</rank>
+            </item>
+            <item id="server_id">
+              <rank>20</rank>
+            </item>
+            <item id="replica_role">
+              <rank>30</rank>
+            </item>
+            <item id="sync_state">
+              <rank>40</rank>
+            </item>
+            <item id="availability_mode">
+              <rank>50</rank>
+            </item>
+            <item id="failover_mode">
+              <rank>60</rank>
+            </item>
+            <item id="readable_secondary">
+              <rank>70</rank>
+            </item>
+          </items>
+        </details>
+        <search>
+          <items>
+            <item id="ag_id">
+              <rank>10</rank>
+            </item>
+            <item id="server_id">
+              <rank>20</rank>
+            </item>
+            <item id="replica_role">
+              <rank>30</rank>
+            </item>
+            <item id="sync_state">
+              <rank>40</rank>
+            </item>
+            <item id="availability_mode">
+              <rank>50</rank>
+            </item>
+            <item id="failover_mode">
+              <rank>60</rank>
+            </item>
+            <item id="readable_secondary">
+              <rank>70</rank>
+            </item>
+          </items>
+        </search>
+        <list>
+          <items>
+            <item id="ag_id">
+              <rank>10</rank>
+            </item>
+            <item id="server_id">
+              <rank>20</rank>
+            </item>
+            <item id="replica_role">
+              <rank>30</rank>
+            </item>
+            <item id="sync_state">
+              <rank>40</rank>
+            </item>
+            <item id="availability_mode">
+              <rank>50</rank>
+            </item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+
+    <!-- ==========================================================================
+         LNKA VAILABILITYGROUPTODATABASE - Link class for AG to DatabaseSchema
+         ========================================================================== -->
+    <class id="lnkAvailabilityGroupToDatabase" _delta="define">
+      <parent>cmdbAbstractObject</parent>
+      <properties>
+        <is_link>1</is_link>
+        <category>bizmodel,configmgmt</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>lnkavailabilitygrouptodatabase</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field/>
+        <naming>
+          <format>%1$s - %2$s</format>
+          <attributes>
+            <attribute id="ag_id"/>
+            <attribute id="databaseschema_id"/>
+          </attributes>
+        </naming>
+        <display_template/>
+        <icon/>
+        <reconciliation>
+          <attributes>
+            <attribute id="ag_id"/>
+            <attribute id="databaseschema_id"/>
+          </attributes>
+        </reconciliation>
+      </properties>
+      <fields>
+        <field id="ag_id" xsi:type="AttributeExternalKey">
+          <sql>ag_id</sql>
+          <target_class>AvailabilityGroup</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="ag_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>ag_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="databaseschema_id" xsi:type="AttributeExternalKey">
+          <sql>databaseschema_id</sql>
+          <target_class>DatabaseSchema</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="databaseschema_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>databaseschema_id</extkey_attcode>
           <target_attcode>name</target_attcode>
         </field>
       </fields>
@@ -489,45 +1231,49 @@
       <presentation>
         <details>
           <items>
-            <item id="volume_id">
+            <item id="ag_id">
               <rank>10</rank>
             </item>
-            <item id="dbcluster_id">
+            <item id="databaseschema_id">
               <rank>20</rank>
             </item>
           </items>
         </details>
         <search>
           <items>
-            <item id="volume_id">
+            <item id="ag_id">
               <rank>10</rank>
             </item>
-            <item id="dbcluster_id">
+            <item id="databaseschema_id">
               <rank>20</rank>
             </item>
           </items>
         </search>
         <list>
           <items>
-            <item id="volume_id">
+            <item id="ag_id">
               <rank>10</rank>
             </item>
-            <item id="dbcluster_id">
+            <item id="databaseschema_id">
               <rank>20</rank>
             </item>
           </items>
         </list>
       </presentation>
     </class>
-    <class id="WebCluster" _delta="define">
-      <parent>SoftwareInstance</parent>
+
+    <!-- ==========================================================================
+         DOCKERSERVICE - Docker Swarm services (extends ClusterResource)
+         ========================================================================== -->
+    <class id="DockerService" _delta="define">
+      <parent>ClusterResource</parent>
       <properties>
-        <category>bizmodel,searchable</category>
+        <category>bizmodel,searchable,configmgmt</category>
         <abstract>false</abstract>
         <key_type>autoincrement</key_type>
-        <db_table>webcluster</db_table>
+        <db_table>dockerservice</db_table>
         <db_key_field>id</db_key_field>
-        <db_final_class_field/>
+        <db_final_class_field>finalclass</db_final_class_field>
         <naming>
           <format>%1$s</format>
           <attributes>
@@ -535,53 +1281,53 @@
           </attributes>
         </naming>
         <display_template/>
-        <icon>images/webcluster.png</icon>
+        <icon>images/docker-service.png</icon>
         <reconciliation>
           <attributes>
             <attribute id="name"/>
             <attribute id="org_id"/>
             <attribute id="organization_name"/>
+            <attribute id="cluster_id"/>
           </attributes>
         </reconciliation>
       </properties>
       <fields>
-        <field id="webnode_list" xsi:type="AttributeLinkedSetIndirect">
-          <linked_class>lnkWebClusterToSoftwareInstance</linked_class>
-          <ext_key_to_me>webcluster_id</ext_key_to_me>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-          <ext_key_to_remote>softwareinstance_id</ext_key_to_remote>
-          <duplicates/>
-        </field>
-        <field id="webapp_list" xsi:type="AttributeLinkedSet">
-          <linked_class>WebApplication</linked_class>
-          <ext_key_to_me>softwareinstance_id</ext_key_to_me>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-        </field>
-        <field id="cluster_type" xsi:type="AttributeEnum">
-          <values>
-            <value>Fail-over</value>
-            <value>Master/Slave</value>
-            <value>Active/Active</value>
-            <value>Active/Standby</value>
-          </values>
-          <sql>cluster_type</sql>
+        <field id="image" xsi:type="AttributeString">
+          <sql>image</sql>
           <default_value/>
           <is_null_allowed>true</is_null_allowed>
-          <display_style>radio_vertical</display_style>
+        </field>
+        <field id="replicas_desired" xsi:type="AttributeInteger">
+          <sql>replicas_desired</sql>
+          <default_value>1</default_value>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="replicas_running" xsi:type="AttributeInteger">
+          <sql>replicas_running</sql>
+          <default_value>0</default_value>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="published_ports" xsi:type="AttributeString">
+          <sql>published_ports</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="stack_name" xsi:type="AttributeString">
+          <sql>stack_name</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
         </field>
       </fields>
-      <methods />
       <relations>
-        <relation id="impacts" _delta="define">
+        <relation id="impacts">
           <neighbours>
-            <neighbour id="webapplication" _delta="define">
-              <attribute>webapp_list</attribute>
+            <neighbour id="cluster">
+              <attribute>cluster_id</attribute>
             </neighbour>
           </neighbours>
         </relation>
       </relations>
+      <methods/>
       <presentation>
         <details>
           <items>
@@ -591,213 +1337,49 @@
             <item id="org_id">
               <rank>20</rank>
             </item>
-            <item id="status">
+            <item id="business_criticity">
               <rank>30</rank>
             </item>
-            <item id="business_criticity">
-              <rank>40</rank>
+            <item id="cluster_id">
+              <rank>50</rank>
             </item>
-            <item id="software_id" _delta="delete">
+            <item id="image">
               <rank>60</rank>
             </item>
-            <item id="softwarelicence_id" _delta="delete">
+            <item id="replicas_desired">
               <rank>70</rank>
             </item>
-            <item id="cluster_type" _delta="delete">
-              <rank>75</rank>
-            </item>
-            <item id="path">
+            <item id="replicas_running">
               <rank>80</rank>
             </item>
-            <item id="move2production">
+            <item id="published_ports">
               <rank>90</rank>
             </item>
-            <item id="description">
+            <item id="stack_name">
               <rank>100</rank>
             </item>
-            <item id="contacts_list">
+            <item id="move2production">
               <rank>110</rank>
-            </item>
-            <item id="documents_list">
-              <rank>120</rank>
-            </item>
-            <item id="tickets_list">
-              <rank>130</rank>
-            </item>
-            <item id="applicationsolution_list">
-              <rank>140</rank>
-            </item>
-            <item id="webnode_list">
-              <rank>145</rank>
-            </item>
-            <item id="webapp_list">
-              <rank>150</rank>
-            </item>
-            <item id="providercontracts_list">
-              <rank>160</rank>
-            </item>
-            <item id="services_list">
-              <rank>170</rank>
-            </item>
-          </items>
-        </details>
-        <search>
-          <items>
-            <item id="name">
-              <rank>10</rank>
-            </item>
-            <item id="org_id">
-              <rank>20</rank>
-            </item>
-            <item id="business_criticity">
-              <rank>30</rank>
-            </item>
-            <item id="move2production">
-              <rank>40</rank>
-            </item>
-          </items>
-        </search>
-        <list>
-          <items>
-            <item id="org_id">
-              <rank>10</rank>
-            </item>
-            <item id="business_criticity">
-              <rank>20</rank>
-            </item>
-          </items>
-        </list>
-      </presentation>
-    </class>
-    <class id="DBCluster" _delta="define">
-      <parent>SoftwareInstance</parent>
-      <properties>
-        <category>bizmodel,searchable</category>
-        <abstract>false</abstract>
-        <key_type>autoincrement</key_type>
-        <db_table>dbcluster</db_table>
-        <db_key_field>id</db_key_field>
-        <db_final_class_field/>
-        <naming>
-          <format>%1$s</format>
-          <attributes>
-            <attribute id="name"/>
-          </attributes>
-        </naming>
-        <display_template/>
-        <icon>images/dbcluster.png</icon>
-        <reconciliation>
-          <attributes>
-            <attribute id="name"/>
-            <attribute id="org_id"/>
-            <attribute id="organization_name"/>
-          </attributes>
-        </reconciliation>
-      </properties>
-      <fields>
-        <field id="dbnode_list" xsi:type="AttributeLinkedSetIndirect">
-          <linked_class>lnkDBClusterToSoftwareInstance</linked_class>
-          <ext_key_to_me>dbcluster_id</ext_key_to_me>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-          <ext_key_to_remote>softwareinstance_id</ext_key_to_remote>
-          <duplicates/>
-        </field>
-        <field id="dbschema_list" xsi:type="AttributeLinkedSet">
-          <linked_class>DatabaseSchema</linked_class>
-          <ext_key_to_me>softwareinstance_id</ext_key_to_me>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-        </field>
-        <field id="volume_list" xsi:type="AttributeLinkedSet" _delta="define">
-          <linked_class>lnkDBClusterToVolume</linked_class>
-          <ext_key_to_me>dbcluster_id</ext_key_to_me>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-          <ext_key_to_remote>volume_id</ext_key_to_remote>
-          <duplicates/>
-        </field>
-        <field id="cluster_type" xsi:type="AttributeEnum">
-          <values>
-            <value>Fail-over</value>
-            <value>Master/Slave</value>
-            <value>Active/Active</value>
-            <value>Active/Standby</value>
-          </values>
-          <sql>cluster_type</sql>
-          <default_value/>
-          <is_null_allowed>true</is_null_allowed>
-          <display_style>radio_vertical</display_style>
-        </field>
-      </fields>
-      <methods />
-      <relations>
-        <relation id="impacts" _delta="define">
-          <neighbours>
-            <neighbour id="databaseschema" _delta="define">
-              <attribute>dbschema_list</attribute>
-            </neighbour>
-          </neighbours>
-        </relation>
-      </relations>
-      <presentation>
-        <details>
-          <items>
-            <item id="name">
-              <rank>10</rank>
-            </item>
-            <item id="org_id">
-              <rank>20</rank>
-            </item>
-            <item id="status">
-              <rank>30</rank>
-            </item>
-            <item id="business_criticity">
-              <rank>40</rank>
-            </item>
-            <item id="software_id" _delta="delete">
-              <rank>60</rank>
-            </item>
-            <item id="softwarelicence_id" _delta="delete">
-              <rank>70</rank>
-            </item>
-            <item id="cluster_type" _delta="delete">
-              <rank>75</rank>
-            </item>
-            <item id="path">
-              <rank>80</rank>
-            </item>
-            <item id="move2production">
-              <rank>90</rank>
             </item>
             <item id="description">
-              <rank>100</rank>
-            </item>
-            <item id="contacts_list">
-              <rank>110</rank>
-            </item>
-            <item id="documents_list">
               <rank>120</rank>
             </item>
-            <item id="tickets_list">
+            <item id="contacts_list">
               <rank>130</rank>
             </item>
-            <item id="applicationsolution_list">
+            <item id="documents_list">
               <rank>140</rank>
             </item>
-            <item id="dbnode_list">
-              <rank>145</rank>
-            </item>
-            <item id="dbschema_list">
+            <item id="tickets_list">
               <rank>150</rank>
             </item>
-            <item id="providercontracts_list">
+            <item id="applicationsolution_list">
               <rank>160</rank>
             </item>
-            <item id="services_list">
+            <item id="providercontracts_list">
               <rank>170</rank>
             </item>
-            <item id="volume_list">
+            <item id="services_list">
               <rank>180</rank>
             </item>
           </items>
@@ -813,8 +1395,17 @@
             <item id="business_criticity">
               <rank>30</rank>
             </item>
+            <item id="cluster_id">
+              <rank>50</rank>
+            </item>
+            <item id="image">
+              <rank>60</rank>
+            </item>
+            <item id="stack_name">
+              <rank>70</rank>
+            </item>
             <item id="move2production">
-              <rank>40</rank>
+              <rank>80</rank>
             </item>
           </items>
         </search>
@@ -826,342 +1417,377 @@
             <item id="business_criticity">
               <rank>20</rank>
             </item>
+            <item id="cluster_id">
+              <rank>40</rank>
+            </item>
+            <item id="image">
+              <rank>50</rank>
+            </item>
           </items>
         </list>
       </presentation>
     </class>
-    <class id="lnkDBClusterToSoftwareInstance" _delta="define">
-      <parent>cmdbAbstractObject</parent>
+
+    <!-- ==========================================================================
+         KUBERNETESWORKLOAD - Kubernetes workloads (extends ClusterResource)
+         ========================================================================== -->
+    <class id="KubernetesWorkload" _delta="define">
+      <parent>ClusterResource</parent>
       <properties>
-        <is_link>1</is_link>
-        <category>bizmodel</category>
+        <category>bizmodel,searchable,configmgmt</category>
         <abstract>false</abstract>
         <key_type>autoincrement</key_type>
-        <db_table>lnkdbclustertosoftwareinstance</db_table>
+        <db_table>kubernetesworkload</db_table>
         <db_key_field>id</db_key_field>
-        <db_final_class_field/>
+        <db_final_class_field>finalclass</db_final_class_field>
         <naming>
-          <format>%1$s %2$s</format>
+          <format>%1$s</format>
           <attributes>
-            <attribute id="dbcluster_id"/>
-            <attribute id="softwareinstance_id"/>
+            <attribute id="name"/>
           </attributes>
         </naming>
         <display_template/>
-        <icon/>
+        <icon>images/kubernetes-workload.png</icon>
         <reconciliation>
           <attributes>
-            <attribute id="dbcluster_id"/>
-            <attribute id="softwareinstance_id"/>
+            <attribute id="name"/>
+            <attribute id="org_id"/>
+            <attribute id="organization_name"/>
+            <attribute id="cluster_id"/>
           </attributes>
         </reconciliation>
       </properties>
       <fields>
-        <field id="dbcluster_id" xsi:type="AttributeExternalKey">
-          <sql>dbcluster_id</sql>
-          <target_class>DBCluster</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
+        <field id="namespace" xsi:type="AttributeString">
+          <sql>namespace</sql>
+          <default_value>default</default_value>
+          <is_null_allowed>true</is_null_allowed>
         </field>
-        <field id="dbcluster_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>dbcluster_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
+        <field id="workload_type" xsi:type="AttributeEnum">
+          <sql>workload_type</sql>
+          <values>
+            <value id="deployment">deployment</value>
+            <value id="statefulset">statefulset</value>
+            <value id="daemonset">daemonset</value>
+            <value id="job">job</value>
+            <value id="cronjob">cronjob</value>
+          </values>
+          <default_value>deployment</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
         </field>
-        <field id="softwareinstance_id" xsi:type="AttributeExternalKey">
-          <sql>softwareinstance_id</sql>
-          <target_class>DBServer</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
+        <field id="image" xsi:type="AttributeString">
+          <sql>image</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
         </field>
-        <field id="softwareinstance_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>softwareinstance_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
+        <field id="replicas_desired" xsi:type="AttributeInteger">
+          <sql>replicas_desired</sql>
+          <default_value>1</default_value>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="replicas_running" xsi:type="AttributeInteger">
+          <sql>replicas_running</sql>
+          <default_value>0</default_value>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="container_ports" xsi:type="AttributeString">
+          <sql>container_ports</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="service_type" xsi:type="AttributeEnum">
+          <sql>service_type</sql>
+          <values>
+            <value id="clusterip">clusterip</value>
+            <value id="nodeport">nodeport</value>
+            <value id="loadbalancer">loadbalancer</value>
+            <value id="none">none</value>
+          </values>
+          <default_value>clusterip</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
         </field>
       </fields>
+      <relations>
+        <relation id="impacts">
+          <neighbours>
+            <neighbour id="cluster">
+              <attribute>cluster_id</attribute>
+            </neighbour>
+          </neighbours>
+        </relation>
+      </relations>
       <methods/>
       <presentation>
         <details>
           <items>
-            <item id="dbcluster_id">
+            <item id="name">
               <rank>10</rank>
             </item>
-            <item id="softwareinstance_id">
+            <item id="org_id">
               <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="cluster_id">
+              <rank>50</rank>
+            </item>
+            <item id="namespace">
+              <rank>60</rank>
+            </item>
+            <item id="workload_type">
+              <rank>70</rank>
+            </item>
+            <item id="image">
+              <rank>80</rank>
+            </item>
+            <item id="replicas_desired">
+              <rank>90</rank>
+            </item>
+            <item id="replicas_running">
+              <rank>100</rank>
+            </item>
+            <item id="container_ports">
+              <rank>110</rank>
+            </item>
+            <item id="service_type">
+              <rank>120</rank>
+            </item>
+            <item id="move2production">
+              <rank>130</rank>
+            </item>
+            <item id="description">
+              <rank>140</rank>
+            </item>
+            <item id="contacts_list">
+              <rank>150</rank>
+            </item>
+            <item id="documents_list">
+              <rank>160</rank>
+            </item>
+            <item id="tickets_list">
+              <rank>170</rank>
+            </item>
+            <item id="applicationsolution_list">
+              <rank>180</rank>
+            </item>
+            <item id="providercontracts_list">
+              <rank>190</rank>
+            </item>
+            <item id="services_list">
+              <rank>200</rank>
             </item>
           </items>
         </details>
         <search>
           <items>
-            <item id="dbcluster_id">
+            <item id="name">
               <rank>10</rank>
             </item>
-            <item id="softwareinstance_id">
+            <item id="org_id">
               <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="cluster_id">
+              <rank>50</rank>
+            </item>
+            <item id="namespace">
+              <rank>60</rank>
+            </item>
+            <item id="workload_type">
+              <rank>70</rank>
+            </item>
+            <item id="move2production">
+              <rank>80</rank>
             </item>
           </items>
         </search>
         <list>
           <items>
-            <item id="dbcluster_id">
+            <item id="org_id">
               <rank>10</rank>
             </item>
-            <item id="softwareinstance_id">
+            <item id="business_criticity">
               <rank>20</rank>
+            </item>
+            <item id="cluster_id">
+              <rank>40</rank>
+            </item>
+            <item id="namespace">
+              <rank>50</rank>
+            </item>
+            <item id="workload_type">
+              <rank>60</rank>
             </item>
           </items>
         </list>
       </presentation>
     </class>
-    <class id="lnkWebClusterToSoftwareInstance" _delta="define">
-      <parent>cmdbAbstractObject</parent>
+
+    <!-- ==========================================================================
+         LOADBALANCER - Load Balancer (extends FunctionalCI)
+         ========================================================================== -->
+    <class id="LoadBalancer" _delta="define">
+      <parent>FunctionalCI</parent>
       <properties>
-        <is_link>1</is_link>
-        <category>bizmodel</category>
+        <category>bizmodel,searchable,configmgmt</category>
         <abstract>false</abstract>
         <key_type>autoincrement</key_type>
-        <db_table>lnkwebclustertosoftwareinstance</db_table>
+        <db_table>loadbalancer</db_table>
         <db_key_field>id</db_key_field>
-        <db_final_class_field/>
+        <db_final_class_field>finalclass</db_final_class_field>
         <naming>
-          <format>%1$s %2$s</format>
+          <format>%1$s</format>
           <attributes>
-            <attribute id="webcluster_id"/>
-            <attribute id="softwareinstance_id"/>
+            <attribute id="name"/>
           </attributes>
         </naming>
         <display_template/>
-        <icon/>
+        <icon>images/loadbalancer.png</icon>
         <reconciliation>
           <attributes>
-            <attribute id="webcluster_id"/>
-            <attribute id="softwareinstance_id"/>
+            <attribute id="name"/>
+            <attribute id="org_id"/>
+            <attribute id="organization_name"/>
           </attributes>
         </reconciliation>
       </properties>
       <fields>
-        <field id="webcluster_id" xsi:type="AttributeExternalKey">
-          <sql>dbcluster_id</sql>
-          <target_class>WebCluster</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
+        <field id="lb_type" xsi:type="AttributeEnum">
+          <sql>lb_type</sql>
+          <values>
+            <value id="hardware">hardware</value>
+            <value id="software">software</value>
+            <value id="cloud">cloud</value>
+            <value id="nlb">nlb</value>
+          </values>
+          <default_value>hardware</default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <display_style>list</display_style>
         </field>
-        <field id="webcluster_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>webcluster_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
+        <field id="backend_nodes_list" xsi:type="AttributeLinkedSetIndirect">
+          <linked_class>lnkLoadBalancerToFunctionalCI</linked_class>
+          <ext_key_to_me>loadbalancer_id</ext_key_to_me>
+          <count_min>0</count_min>
+          <count_max>0</count_max>
+          <ext_key_to_remote>functionalci_id</ext_key_to_remote>
+          <duplicates/>
         </field>
-        <field id="softwareinstance_id" xsi:type="AttributeExternalKey">
-          <sql>softwareinstance_id</sql>
-          <target_class>WebServer</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
-        </field>
-        <field id="softwareinstance_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>softwareinstance_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
+        <field id="addresses_list" xsi:type="AttributeLinkedSet">
+          <linked_class>LBAddress</linked_class>
+          <ext_key_to_me>loadbalancer_id</ext_key_to_me>
+          <edit_mode>in_place</edit_mode>
+          <count_min>0</count_min>
+          <count_max>0</count_max>
         </field>
       </fields>
+      <relations>
+        <relation id="impacts">
+          <neighbours>
+            <neighbour id="lbaddress">
+              <attribute>addresses_list</attribute>
+            </neighbour>
+            <neighbour id="functionalci">
+              <query_down>SELECT FunctionalCI AS c JOIN lnkLoadBalancerToFunctionalCI AS l1 ON l1.functionalci_id=c.id WHERE l1.loadbalancer_id = :this-&gt;id</query_down>
+              <query_up>SELECT FunctionalCI AS c JOIN lnkLoadBalancerToFunctionalCI AS l1 ON l1.functionalci_id=c.id WHERE l1.loadbalancer_id = :this-&gt;id</query_up>
+            </neighbour>
+          </neighbours>
+        </relation>
+      </relations>
       <methods/>
       <presentation>
         <details>
           <items>
-            <item id="webcluster_id">
+            <item id="name">
               <rank>10</rank>
             </item>
-            <item id="softwareinstance_id">
+            <item id="org_id">
               <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="lb_type">
+              <rank>50</rank>
+            </item>
+            <item id="move2production">
+              <rank>60</rank>
+            </item>
+            <item id="description">
+              <rank>70</rank>
+            </item>
+            <item id="contacts_list">
+              <rank>80</rank>
+            </item>
+            <item id="documents_list">
+              <rank>90</rank>
+            </item>
+            <item id="tickets_list">
+              <rank>100</rank>
+            </item>
+            <item id="applicationsolution_list">
+              <rank>110</rank>
+            </item>
+            <item id="backend_nodes_list">
+              <rank>120</rank>
+            </item>
+            <item id="addresses_list">
+              <rank>130</rank>
+            </item>
+            <item id="providercontracts_list">
+              <rank>140</rank>
+            </item>
+            <item id="services_list">
+              <rank>150</rank>
             </item>
           </items>
         </details>
         <search>
           <items>
-            <item id="webcluster_id">
+            <item id="name">
               <rank>10</rank>
             </item>
-            <item id="softwareinstance_id">
+            <item id="org_id">
               <rank>20</rank>
+            </item>
+            <item id="business_criticity">
+              <rank>30</rank>
+            </item>
+            <item id="lb_type">
+              <rank>50</rank>
+            </item>
+            <item id="move2production">
+              <rank>60</rank>
             </item>
           </items>
         </search>
         <list>
           <items>
-            <item id="webcluster_id">
+            <item id="org_id">
               <rank>10</rank>
             </item>
-            <item id="softwareinstance_id">
+            <item id="business_criticity">
               <rank>20</rank>
+            </item>
+            <item id="lb_type">
+              <rank>40</rank>
             </item>
           </items>
         </list>
       </presentation>
     </class>
-    <class id="lnkDBServerToDBCluster" _delta="define">
-      <parent>cmdbAbstractObject</parent>
-      <properties>
-        <is_link>1</is_link>
-        <category>bizmodel</category>
-        <abstract>false</abstract>
-        <key_type>autoincrement</key_type>
-        <db_table>lnkdbservertodbcluster</db_table>
-        <db_key_field>id</db_key_field>
-        <db_final_class_field/>
-        <naming>
-          <format>%1$s %2$s</format>
-          <attributes>
-            <attribute id="dbserver_id"/>
-            <attribute id="dbcluster_id"/>
-          </attributes>
-        </naming>
-        <display_template/>
-        <icon/>
-        <reconciliation>
-          <attributes>
-            <attribute id="dbserver_id"/>
-            <attribute id="dbcluster_id"/>
-          </attributes>
-        </reconciliation>
-      </properties>
-      <fields>
-        <field id="dbserver_id" xsi:type="AttributeExternalKey">
-          <sql>dbserver_id</sql>
-          <target_class>DBServer</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
-        </field>
-        <field id="dbserver_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>dbserver_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
-        <field id="dbcluster_id" xsi:type="AttributeExternalKey">
-          <sql>dbcluster_id</sql>
-          <target_class>DBCluster</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
-        </field>
-        <field id="dbcluster_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>dbcluster_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
-      </fields>
-      <methods/>
-      <presentation>
-        <details>
-          <items>
-            <item id="dbserver_id">
-              <rank>10</rank>
-            </item>
-            <item id="dbcluster_id">
-              <rank>20</rank>
-            </item>
-          </items>
-        </details>
-        <search>
-          <items>
-            <item id="dbserver_id">
-              <rank>10</rank>
-            </item>
-            <item id="dbcluster_id">
-              <rank>20</rank>
-            </item>
-          </items>
-        </search>
-        <list>
-          <items>
-            <item id="dbserver_id">
-              <rank>10</rank>
-            </item>
-            <item id="dbcluster_id">
-              <rank>20</rank>
-            </item>
-          </items>
-        </list>
-      </presentation>
-    </class>
-    <class id="lnkWebServerToWebCluster" _delta="define">
-      <parent>cmdbAbstractObject</parent>
-      <properties>
-        <is_link>1</is_link>
-        <category>bizmodel</category>
-        <abstract>false</abstract>
-        <key_type>autoincrement</key_type>
-        <db_table>lnkwebservertowebcluster</db_table>
-        <db_key_field>id</db_key_field>
-        <db_final_class_field/>
-        <naming>
-          <format>%1$s %2$s</format>
-          <attributes>
-            <attribute id="webserver_id"/>
-            <attribute id="webcluster_id"/>
-          </attributes>
-        </naming>
-        <display_template/>
-        <icon/>
-        <reconciliation>
-          <attributes>
-            <attribute id="webserver_id"/>
-            <attribute id="webcluster_id"/>
-          </attributes>
-        </reconciliation>
-      </properties>
-      <fields>
-        <field id="webserver_id" xsi:type="AttributeExternalKey">
-          <sql>webserver_id</sql>
-          <target_class>WebServer</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
-        </field>
-        <field id="webserver_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>webserver_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
-        <field id="webcluster_id" xsi:type="AttributeExternalKey">
-          <sql>webcluster_id</sql>
-          <target_class>WebCluster</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
-        </field>
-        <field id="webcluster_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>webcluster_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
-      </fields>
-      <methods/>
-      <presentation>
-        <details>
-          <items>
-            <item id="webserver_id">
-              <rank>10</rank>
-            </item>
-            <item id="webcluster_id">
-              <rank>20</rank>
-            </item>
-          </items>
-        </details>
-        <search>
-          <items>
-            <item id="webserver_id">
-              <rank>10</rank>
-            </item>
-            <item id="webcluster_id">
-              <rank>20</rank>
-            </item>
-          </items>
-        </search>
-        <list>
-          <items>
-            <item id="webserver_id">
-              <rank>10</rank>
-            </item>
-            <item id="webcluster_id">
-              <rank>20</rank>
-            </item>
-          </items>
-        </list>
-      </presentation>
-    </class>
+
+    <!-- ==========================================================================
+         LBADDRESS - Load Balancer address (VIP + port) (extends FunctionalCI)
+         ========================================================================== -->
     <class id="LBAddress" _delta="define">
       <parent>FunctionalCI</parent>
       <properties>
-        <category>bizmodel,searchable,structure</category>
+        <category>bizmodel,searchable,configmgmt</category>
         <abstract>false</abstract>
         <key_type>autoincrement</key_type>
         <db_table>lbaddress</db_table>
@@ -1170,19 +1796,17 @@
         <naming>
           <format>%1$s</format>
           <attributes>
-            <attribute id="name" />
+            <attribute id="name"/>
           </attributes>
         </naming>
         <display_template/>
-        <icon/>
+        <icon>images/lbaddress.png</icon>
         <reconciliation>
           <attributes>
             <attribute id="name"/>
             <attribute id="org_id"/>
             <attribute id="organization_name"/>
-            <attribute id="loadbalancer_id" />
-            <attribute id="loadbalancer_name" />
-            <attribute id="finalclass" />
+            <attribute id="loadbalancer_id"/>
           </attributes>
         </reconciliation>
       </properties>
@@ -1192,32 +1816,36 @@
           <target_class>LoadBalancer</target_class>
           <is_null_allowed>false</is_null_allowed>
           <on_target_delete>DEL_MANUAL</on_target_delete>
-          <allow_target_creation>false</allow_target_creation> 
+          <allow_target_creation>false</allow_target_creation>
         </field>
         <field id="loadbalancer_name" xsi:type="AttributeExternalField">
           <extkey_attcode>loadbalancer_id</extkey_attcode>
           <target_attcode>name</target_attcode>
         </field>
-        <field id="webapp_list" xsi:type="AttributeLinkedSet">
-          <linked_class>WebApplication</linked_class>
-          <ext_key_to_me>lbaddress_id</ext_key_to_me>
-          <edit_mode>in_place</edit_mode>
-          <count_min>0</count_min>
-          <count_max>0</count_max>
-        </field>
         <field id="address" xsi:type="AttributeString">
           <sql>address</sql>
+          <default_value/>
           <is_null_allowed>false</is_null_allowed>
         </field>
         <field id="port" xsi:type="AttributeString">
           <sql>port</sql>
+          <default_value/>
           <is_null_allowed>false</is_null_allowed>
         </field>
       </fields>
-      <methods />
+      <relations>
+        <relation id="impacts">
+          <neighbours>
+            <neighbour id="loadbalancer">
+              <attribute>loadbalancer_id</attribute>
+            </neighbour>
+          </neighbours>
+        </relation>
+      </relations>
+      <methods/>
       <presentation>
         <details>
-          <items _delta="merge">
+          <items>
             <item id="name">
               <rank>10</rank>
             </item>
@@ -1248,17 +1876,17 @@
             <item id="documents_list">
               <rank>100</rank>
             </item>
-            <item id="applicationsolution_list">
+            <item id="tickets_list">
               <rank>110</rank>
             </item>
-            <item id="webapp_list">
-              <rank>115</rank>
+            <item id="applicationsolution_list">
+              <rank>120</rank>
             </item>
             <item id="providercontracts_list">
-              <rank>100</rank>
+              <rank>130</rank>
             </item>
             <item id="services_list">
-              <rank>120</rank>
+              <rank>140</rank>
             </item>
           </items>
         </details>
@@ -1273,66 +1901,69 @@
             <item id="business_criticity">
               <rank>30</rank>
             </item>
-            <item id="move2production">
+            <item id="loadbalancer_id">
               <rank>40</rank>
+            </item>
+            <item id="address">
+              <rank>50</rank>
+            </item>
+            <item id="move2production">
+              <rank>60</rank>
             </item>
           </items>
         </search>
         <list>
           <items>
-            <item id="finalclass">
+            <item id="org_id">
               <rank>10</rank>
             </item>
-            <item id="org_id">
+            <item id="business_criticity">
               <rank>20</rank>
             </item>
-            <item id="business_criticity">
+            <item id="loadbalancer_id">
               <rank>30</rank>
             </item>
-            <item id="loadbalancer_id">
+            <item id="address">
               <rank>40</rank>
+            </item>
+            <item id="port">
+              <rank>50</rank>
             </item>
           </items>
         </list>
       </presentation>
     </class>
+
+    <!-- ==========================================================================
+         LNKLOADBALANCERTOFUNCTIONALCI - Link class for LoadBalancer to FunctionalCI (backends)
+         ========================================================================== -->
     <class id="lnkLoadBalancerToFunctionalCI" _delta="define">
       <parent>cmdbAbstractObject</parent>
       <properties>
         <is_link>1</is_link>
-        <category>bizmodel</category>
+        <category>bizmodel,configmgmt</category>
         <abstract>false</abstract>
         <key_type>autoincrement</key_type>
         <db_table>lnkloadbalancertofunctionalci</db_table>
         <db_key_field>id</db_key_field>
         <db_final_class_field/>
         <naming>
-          <format>%1$s %2$s</format>
+          <format>%1$s - %2$s</format>
           <attributes>
-            <attribute id="functionalci_id"/>
             <attribute id="loadbalancer_id"/>
+            <attribute id="functionalci_id"/>
           </attributes>
         </naming>
         <display_template/>
         <icon/>
         <reconciliation>
           <attributes>
-            <attribute id="functionalci_id"/>
             <attribute id="loadbalancer_id"/>
+            <attribute id="functionalci_id"/>
           </attributes>
         </reconciliation>
       </properties>
       <fields>
-        <field id="functionalci_id" xsi:type="AttributeExternalKey">
-          <sql>functionalci_id</sql>
-          <target_class>FunctionalCI</target_class>
-          <is_null_allowed>false</is_null_allowed>
-          <on_target_delete>DEL_AUTO</on_target_delete>
-        </field>
-        <field id="functionalci_name" xsi:type="AttributeExternalField">
-          <extkey_attcode>functionalci_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
         <field id="loadbalancer_id" xsi:type="AttributeExternalKey">
           <sql>loadbalancer_id</sql>
           <target_class>LoadBalancer</target_class>
@@ -1343,56 +1974,133 @@
           <extkey_attcode>loadbalancer_id</extkey_attcode>
           <target_attcode>name</target_attcode>
         </field>
+        <field id="functionalci_id" xsi:type="AttributeExternalKey">
+          <sql>functionalci_id</sql>
+          <target_class>FunctionalCI</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="functionalci_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>functionalci_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
       </fields>
       <methods/>
       <presentation>
         <details>
           <items>
-            <item id="functionalci_id">
+            <item id="loadbalancer_id">
               <rank>10</rank>
             </item>
-            <item id="loadbalancer_id">
+            <item id="functionalci_id">
               <rank>20</rank>
             </item>
           </items>
         </details>
         <search>
           <items>
-            <item id="functionalci_id">
+            <item id="loadbalancer_id">
               <rank>10</rank>
             </item>
-            <item id="loadlbalancer_id">
+            <item id="functionalci_id">
               <rank>20</rank>
             </item>
           </items>
         </search>
         <list>
           <items>
-            <item id="functionalci_id">
+            <item id="loadbalancer_id">
               <rank>10</rank>
             </item>
-            <item id="loadbalancer_id">
+            <item id="functionalci_id">
               <rank>20</rank>
             </item>
           </items>
         </list>
       </presentation>
     </class>
+
+    <!-- ==========================================================================
+         SERVER EXTENSION - Add cluster_list (indirect link via lnkClusterToFunctionalCI)
+         ========================================================================== -->
+    <class id="Server" _delta="must_exist">
+      <fields>
+        <field id="cluster_list" xsi:type="AttributeLinkedSetIndirect" _delta="define">
+          <linked_class>lnkClusterToFunctionalCI</linked_class>
+          <ext_key_to_me>functionalci_id</ext_key_to_me>
+          <count_min>0</count_min>
+          <count_max>0</count_max>
+          <ext_key_to_remote>cluster_id</ext_key_to_remote>
+          <duplicates/>
+        </field>
+      </fields>
+      <presentation>
+        <details>
+          <items>
+            <item id="cluster_list" _delta="define">
+              <rank>500</rank>
+            </item>
+          </items>
+        </details>
+      </presentation>
+    </class>
+
+    <!-- ==========================================================================
+         DATABASESCHEMA EXTENSION - Add availabilitygroup_list (indirect link via lnkAvailabilityGroupToDatabase)
+         ========================================================================== -->
+    <class id="DatabaseSchema" _delta="must_exist">
+      <fields>
+        <field id="availabilitygroup_list" xsi:type="AttributeLinkedSetIndirect" _delta="define">
+          <linked_class>lnkAvailabilityGroupToDatabase</linked_class>
+          <ext_key_to_me>databaseschema_id</ext_key_to_me>
+          <count_min>0</count_min>
+          <count_max>0</count_max>
+          <ext_key_to_remote>ag_id</ext_key_to_remote>
+          <duplicates/>
+        </field>
+      </fields>
+      <relations>
+        <relation id="impacts" _delta="must_exist">
+          <neighbours>
+            <neighbour id="availabilitygroup" _delta="define">
+              <attribute>availabilitygroup_list</attribute>
+            </neighbour>
+          </neighbours>
+        </relation>
+      </relations>
+      <presentation>
+        <details>
+          <items>
+            <item id="availabilitygroup_list" _delta="define">
+              <rank>500</rank>
+            </item>
+          </items>
+        </details>
+      </presentation>
+    </class>
+
   </classes>
 
+  <!-- ==========================================================================
+       MENUS - OQL menu entries under Configuration Management
+       ========================================================================== -->
   <menus>
     <menu id="ConfigManagementOverview" xsi:type="DashboardMenuNode" _delta="must_exist">
       <definition>
         <cells>
           <cell id="3" _delta="must_exist">
             <dashlets>
-              <dashlet id="111" xsi:type="DashletBadge" _delta="define">
-                <rank>111</rank>
-                <class>DBCluster</class>
+              <dashlet id="Cluster" xsi:type="DashletBadge" _delta="define">
+                <rank>200</rank>
+                <class>Cluster</class>
               </dashlet>
-              <dashlet id="112" xsi:type="DashletBadge" _delta="define">
-                <rank>112</rank>
-                <class>WebCluster</class>
+              <dashlet id="ClusterResource" xsi:type="DashletBadge" _delta="define">
+                <rank>210</rank>
+                <class>ClusterResource</class>
+              </dashlet>
+              <dashlet id="LoadBalancer" xsi:type="DashletBadge" _delta="define">
+                <rank>220</rank>
+                <class>LoadBalancer</class>
               </dashlet>
             </dashlets>
           </cell>
@@ -1400,8 +2108,38 @@
       </definition>
     </menu>
 
-  
+    <!-- OQL Menu Nodes for Cluster Classes -->
+    <menu id="ClusterMenu" xsi:type="OQLMenuNode" _delta="define">
+      <rank>200</rank>
+      <parent>ConfigManagementOverview</parent>
+      <enablement>any</enablement>
+      <definition>
+        <oql>SELECT Cluster</oql>
+        <title_swapping>Class:Cluster</title_swapping>
+      </definition>
+    </menu>
+
+    <menu id="ClusterResourceMenu" xsi:type="OQLMenuNode" _delta="define">
+      <rank>201</rank>
+      <parent>ConfigManagementOverview</parent>
+      <enablement>any</enablement>
+      <definition>
+        <oql>SELECT ClusterResource</oql>
+        <title_swapping>Class:ClusterResource</title_swapping>
+      </definition>
+    </menu>
+
+    <menu id="LoadBalancerMenu" xsi:type="OQLMenuNode" _delta="define">
+      <rank>202</rank>
+      <parent>ConfigManagementOverview</parent>
+      <enablement>any</enablement>
+      <definition>
+        <oql>SELECT LoadBalancer</oql>
+        <title_swapping>Class:LoadBalancer</title_swapping>
+      </definition>
+    </menu>
   </menus>
+
   <user_rights>
     <groups>
     </groups>
