@@ -410,11 +410,12 @@ Können später durch eigene Icons ersetzt werden.
 
 ## 6. Implementierungs-Schritte
 
-### Schritt 1: Projekt-Setup
-- Branch sicherstellen (`claude/plan-cluster-extension-P2gQ7`)
-- Alte Dateien aufräumen (bestehende datamodel/dict-Dateien entfernen)
-- Neue `module.cluster-ci.php` mit iTop 3.2-Metadaten
-- Platzhalter-Icons vorbereiten
+### Schritt 1: Projekt-Setup ✅ ERLEDIGT
+- ✅ Branch sicherstellen (`claude/plan-cluster-extension-P2gQ7`)
+- ✅ Neue `module.cluster-ci.php` mit iTop 3.2-Metadaten (cluster-ci/1.0.0, deps 3.0.0)
+- ✅ Platzhalter-Icons vorbereiten (cluster.png, cluster-resource.png, availability-group.png,
+  docker-service.png, kubernetes-workload.png, loadbalancer.png)
+- ⏳ Alte Dateien aufräumen (datamodel/dict) – wird bei Schritt 2 durch Neuschreiben ersetzt
 
 ### Schritt 2: XML-Datenmodell – Kernklassen
 - `Cluster` Klasse mit allen Attributen (inkl. location_id, redundancy_location_id)
