@@ -5,6 +5,7 @@ Extensions for Combodo's ITIL Solution: iTop (<http://www.combodo.com/itop>)
 ## Acknowledgments
 
 This extension is inspired by and builds upon the excellent original work by:
+- **rogermartensson** - Extendend cluster-ci extension (<https://github.com/rogermartensson/itop-cluster-ci>)
 - **lndevnull** - Original cluster-ci extension (<https://github.com/lndevnull/itop-extensions>)
 - **rogermartensson** - LoadBalancer extension
 
@@ -42,13 +43,13 @@ The new model replaces the previous DBCluster/WebCluster architecture with a mor
 
 | Class | Description | Icon |
 |-------|-------------|------|
-| **Cluster** | Central cluster CI representing any cluster type | ![cluster](images/cluster.png) |
-| **ClusterResource** | Base class for clustered services/roles | ![cluster-resource](images/cluster-resource.png) |
-| **AvailabilityGroup** | SQL Server Always On Availability Group | ![availability-group](images/availability-group.png) |
-| **DockerService** | Docker Swarm service | ![docker-service](images/docker-service.png) |
-| **KubernetesWorkload** | Kubernetes deployment/statefulset/daemonset | ![kubernetes-workload](images/kubernetes-workload.png) |
-| **LoadBalancer** | Load balancer (hardware/software/cloud) | ![loadbalancer](images/loadbalancer.png) |
-| **LBAddress** | Virtual IP + Port exposed by load balancer | ![lbaddress](images/lbaddress.png) |
+| **Cluster** | Central cluster CI representing any cluster type | ![cluster](cluster-ci/images/cluster.png) |
+| **ClusterResource** | Base class for clustered services/roles | ![cluster-resource](cluster-ci/images/cluster-resource.png) |
+| **AvailabilityGroup** | SQL Server Always On Availability Group | ![availability-group](cluster-ci/images/availability-group.png) |
+| **DockerService** | Docker Swarm service | ![docker-service](cluster-ci/images/docker-service.png) |
+| **KubernetesWorkload** | Kubernetes deployment/statefulset/daemonset | ![kubernetes-workload](cluster-ci/images/kubernetes-workload.png) |
+| **LoadBalancer** | Load balancer (hardware/software/cloud) | ![loadbalancer](cluster-ci/images/loadbalancer.png) |
+| **LBAddress** | Virtual IP + Port exposed by load balancer | ![lbaddress](cluster-ci/images/lbaddress.png) |
 
 #### Link Classes (6)
 
