@@ -48,7 +48,7 @@ The new model replaces the previous DBCluster/WebCluster architecture with a mor
 | **DockerService** | Docker Swarm service | ![docker-service](images/docker-service.png) |
 | **KubernetesWorkload** | Kubernetes deployment/statefulset/daemonset | ![kubernetes-workload](images/kubernetes-workload.png) |
 | **LoadBalancer** | Load balancer (hardware/software/cloud) | ![loadbalancer](images/loadbalancer.png) |
-| **LBAddress** | Virtual IP + Port exposed by load balancer | ![loadbalancer](images/lbaddress.png) |
+| **LBAddress** | Virtual IP + Port exposed by load balancer | ![lbaddress](images/lbaddress.png) |
 
 #### Link Classes (6)
 
