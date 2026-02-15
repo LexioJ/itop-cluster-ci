@@ -2059,15 +2059,6 @@
           <duplicates/>
         </field>
       </fields>
-      <relations>
-        <relation id="impacts" _delta="must_exist">
-          <neighbours>
-            <neighbour id="availabilitygroup" _delta="define">
-              <attribute>availabilitygroup_list</attribute>
-            </neighbour>
-          </neighbours>
-        </relation>
-      </relations>
       <presentation>
         <details>
           <items>
@@ -2108,36 +2099,6 @@
       </definition>
     </menu>
 
-    <!-- OQL Menu Nodes for Cluster Classes -->
-    <menu id="ClusterMenu" xsi:type="OQLMenuNode" _delta="define">
-      <rank>200</rank>
-      <parent>ConfigManagementOverview</parent>
-      <enablement>any</enablement>
-      <definition>
-        <oql>SELECT Cluster</oql>
-        <title_swapping>Class:Cluster</title_swapping>
-      </definition>
-    </menu>
-
-    <menu id="ClusterResourceMenu" xsi:type="OQLMenuNode" _delta="define">
-      <rank>201</rank>
-      <parent>ConfigManagementOverview</parent>
-      <enablement>any</enablement>
-      <definition>
-        <oql>SELECT ClusterResource</oql>
-        <title_swapping>Class:ClusterResource</title_swapping>
-      </definition>
-    </menu>
-
-    <menu id="LoadBalancerMenu" xsi:type="OQLMenuNode" _delta="define">
-      <rank>202</rank>
-      <parent>ConfigManagementOverview</parent>
-      <enablement>any</enablement>
-      <definition>
-        <oql>SELECT LoadBalancer</oql>
-        <title_swapping>Class:LoadBalancer</title_swapping>
-      </definition>
-    </menu>
   </menus>
 
   <user_rights>

@@ -41,7 +41,7 @@ SetupWebPage::AddModule(
 		// Documentation
 		//
 		'doc.manual_setup' => '',
-		'doc.more_information' => '',
+		'doc.more_information' => 'https://github.com/LexioJ/itop-cluster-ci',
 
 		// Default settings
 		//
